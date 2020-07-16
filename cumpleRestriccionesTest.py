@@ -5,9 +5,9 @@ import numpy as np
 import datetime 
 
 
-problema = SCPProblem(f'scp/instances/off/scp0.txt')
+#problema = SCPProblem(f'scp/instances/off/scp0.txt')
 #problema = SCPProblem(f'scp/instances/mscp42.txt')
-#problema = SCPProblem(f'scp/instances/off/scpnrh5.txt')
+problema = SCPProblem(f'scp/instances/off/scpnrh5.txt')
 
 
 repara = ReparaStrategy(problema.instance.get_r()
@@ -19,8 +19,8 @@ repara = ReparaStrategy(problema.instance.get_r()
 #sols = np.zeros((50, problema.getNumDim()), dtype=np.float)
 #sols = [ [1.,1.,1.,0.,1.,1.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,1.,1.,1.,1.,0.,1.,1.,0.,1.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,1.,0.,1.,1.,1.,1.,1.,0.,1.,0.,1.,0.,0.,1.,1.,0.,0.,1.,1.,0.,1.,0.,0.,1.,1.,1.,0.,0.,1.,1.,1.,0.,0.,1.,0.,0.,0.,1.,1.,0.,0.,1.,0.,1.,0.,1.,0.,0.,0.,0.,1.,0.,1.,0.,0.,0.,0.,0.,1.,0.,0.,0.,1.,1.,1.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,1.,1.,0.,1.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.]]
 #sols = [ [1.,1.,1.,0.,1.,1.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,1.,1.,1.,1.,0.,1.,1.,0.,1.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,1.,0.,1.,1.,1.,1.,1.,0.,1.,0.,1.,0.,0.,1.,1.,0.,0.,0.,1.,0.,1.,0.,0.,1.,1.,1.,0.,0.,1.,1.,1.,0.,0.,1.,0.,1.,0.,1.,1.,0.,0.,1.,0.,1.,0.,1.,0.,0.,0.,0.,1.,0.,1.,0.,0.,1.,0.,0.,1.,0.,0.,0.,1.,1.,1.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,1.,1.,0.,1.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.]]
-for i in range(1):
-    nsol = 2
+for i in range(5):
+    nsol = 2000
     print(f"creando {nsol} soluciones al azar")
     #sols = problema.generarSolsAlAzar(nsol)
     #sols = np.random.randint(0,2,(nsol,problema.instance.get_columns()), dtype=np.int8)
@@ -29,27 +29,49 @@ for i in range(1):
     #print(sols)
     npsols = np.array(sols)
     #print(f"fin creando soluciones")
-    cumple=[]
+    #cumple=[]
+    reparadasCpu = []
     #print(f"revisando factibilidad")
+    """
     inicio = datetime.datetime.now()
+
     for i in range(npsols.shape[0]):
         #print(npsols[i,:])
         #print(repara.cumple(npsols[i,:]))
-        cumple.append(repara.cumple(npsols[i,:]))
+        #cumple.append(repara.cumple(npsols[i,:]))
+        reparadasCpu.append(repara.repara(npsols[i,:])[0])
+    reparadasCpu = np.array(reparadasCpu)
+    
+    #print(reparadasCpu)
+    #exit()
     fin = datetime.datetime.now()
-    print(f"factibilidad cpu \t{fin-inicio}")
+    print(f"reparacion cpu \t{fin-inicio}")
+    """
     #sols = repara.reparaBatch(sols)
     #fitness, decoded, _ = problema.evalDecBatch(sols, None)
     #fitness, de(coded, _ = problema.evalEnc(sols[1])
-    cumple = np.array(cumple)
+    #cumple = np.array(cumple)
     #print(cumple)
 
     inicio = datetime.datetime.now()
-    cumplidas = cumpleGPU.reparaSoluciones(sols, problema.instance.get_r(), problema.instance.get_c())
+    reparadasGpu = cumpleGPU.reparaSoluciones(sols, problema.instance.get_r(), problema.instance.get_c())
 
     fin = datetime.datetime.now()
 
-    print(f"factibilidad gpu \t{fin-inicio}")
+    print(f"reparacion gpu \t{fin-inicio}")
+    cumplidasCpu = []
+    fitnessCpu = []
+    cumplidasGpu = []
+    fitnessGpu = []
+    #for i in range(npsols.shape[0]):
+        #cumplidasCpu.append(repara.cumple(reparadasCpu[i].tolist()))
+        #cumplidasGpu.append(repara.cumple(reparadasGpu[i].tolist()))
+        #fitnessCpu.append(problema.evalInstance(reparadasCpu[i].tolist()))
+        #fitnessGpu.append(problema.evalInstance(reparadasGpu[i].tolist()))
+    #print(f"repara cpu cumple? {(np.array(cumplidasCpu) == 1).all()}")
+    #print(f"repara gpu cumple? {(np.array(cumplidasGpu) == 1).all()}")
+    #print(f"fitness promedio cpu cumple? {np.average(np.array(fitnessCpu))}")
+    #print(f"fitness promedio gpu cumple? {np.average(np.array(fitnessGpu))}")
     #print(np.prod(cumplidas, axis=1))
 
     #sumaRes = np.array(problema.instance.get_r()).sum(axis=1)

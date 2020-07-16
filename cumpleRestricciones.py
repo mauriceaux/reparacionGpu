@@ -26,43 +26,69 @@ def reparaSoluciones(soluciones, restricciones, pesos):
     #assert m == pesos.shape[0], f"numero de columnas distinto en soluciones {m} y pesos {pesos.shape[0]}"
     #COL = m
     factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
-
-    for z in range(10):
+    columnas = np.arange(soluciones.shape[0])
+    #print(f"soluciones\n{soluciones}")
+    for z in range(100):
         if (factibilidad == 1).all():
-            print(f"todas factibles")
+            #print(f"todas factibles")
+            #print(f"soluciones {soluciones}")
             break
 
     
         assert factibilidad.shape[0] == n, f"numero de factibilidades {factibilidad.shape[0]} distinto de numero de soluciones {n}"
         assert factibilidad.shape[0] == n, f"numero de restricciones en factibilidades {factibilidad.shape[1]} distinto de numero de restricciones {restricciones.shape[0]}"
         #obtengo matriz que representa la suma de todas las columnas incumplidas de numero soluciones x numero columnas soluciones
-        print(f"soluciones\n{soluciones}")
+        
+        
         #print(f"restricciones\n{restricciones}")
-        print(f"factibilidad \n{factibilidad}")
+        #print(f"factibilidad \n{factibilidad}")
         #print(f"pesos \n{pesos}")
         ponderaciones = _ponderarColsReparar(restricciones, factibilidad, pesos)
         #return factibilidad
-        ponderaciones[ponderaciones==0] = 100
+        ponderaciones[ponderaciones==0] = np.max(ponderaciones)*2
         #print(f"ponderaciones \n{ponderaciones}")
-
-        nCols = 5
+        columnas = np.any(factibilidad==0, axis=1)
+        #print(f"columnas {columnas}")
+        #exit()
+        nCols = 3
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
+        #print(f"ponderaciones {ponderaciones.shape}")
         #print(f"columnas elegidas {colsElegidas}")
-        mejorColumna = np.argmin(colsElegidas, axis=1)
+        #print(f"columnas {columnas.shape}")
+        #print(f"ponderaciones elegidas {ponderaciones[columnas,colsElegidas.T].T}")
+        #exit()
+        #posMejorColumna = np.zeros((2,soluciones.shape[0]), dtype=np.int32)
+        #posMejorColumna[0,:] = np.arange(soluciones.shape[0])
+        #print(f"columnas {columnas}")
+        #print(f"colsElegidas.T {colsElegidas.T}")
+        #print(f"ponderaciones {ponderaciones}")
+        #print(f"(ponderaciones[columnas,colsElegidas.T] {ponderaciones[columnas,colsElegidas.T[:,columnas]]}")
+        mejorColumna = np.argmin(ponderaciones[columnas,colsElegidas.T[:,columnas]].T, axis=1)
+        #posMejorColumna[-1,:] = mejorColumna
+        
+        #posMejorColumna.reshape(2,2)
+        #posMejorColumna = np.arange(mejorColumna.shape[0]).reshape(-1,1)
+        #print(posMejorColumna)
+        #posMejorColumna[:,:-1] = mejorColumna.reshape(-1,1)
         #mejorColumna = mejorColumna.reshape(soluciones.shape[0],1)
-        print(f"mejor columna {mejorColumna}")
-        colRandom  = np.random.randint(colsElegidas.shape[1], size=(colsElegidas.shape[0]))
+        #print(f"mejor columna {mejorColumna}")
+        #posColumnaRandom = np.zeros((soluciones.shape[0],2), dtype=np.int32)
+        #posColumnaRandom[0,:] = np.arange(soluciones.shape[0])
+        colRandom  = np.random.randint(colsElegidas.shape[1], size=(np.count_nonzero(columnas)))
+        #posColumnaRandom[-1,:] = colRandom
         #colRandom = colRandom.reshape(-1,1)
-        print(f"columna al azar {colRandom}")
+        #print(f"columna al azar {colRandom}")
         #print(f"solucion.shape {soluciones.shape}")
         #print(f"mejor columna.shape {mejorColumna.shape}")
         #print(f'valores distintos de 0 en columnas reparar mejores columnas? {(soluciones[:,mejorColumna] != 0).any()}')
         #print(f'valores distintos de 0 en columnas reparar columnas random? {(soluciones[:,colRandom] != 0).all()}')
 
         if np.random.uniform() < 0.6:
-            soluciones[mejorColumna] = 1
+            #print(f"reparando en mejor columna")
+            soluciones[columnas,colsElegidas[columnas,mejorColumna]] = 1
         else:
-            soluciones[colRandom] = 1
+            #print(f"reparando en columna random")
+            soluciones[columnas,colsElegidas[columnas,colRandom]] = 1
         #soluciones
         #exit()
 
@@ -77,7 +103,7 @@ def reparaSoluciones(soluciones, restricciones, pesos):
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
 
 
-        
+        #print(f"soluciones\n{soluciones}")
         #exit()
     return soluciones
     
