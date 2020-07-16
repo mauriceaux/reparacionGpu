@@ -28,11 +28,12 @@ def reparaSoluciones(soluciones, restricciones, pesos):
     factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
     columnas = np.arange(soluciones.shape[0])
     #print(f"soluciones\n{soluciones}")
-    for z in range(100):
-        if (factibilidad == 1).all():
+    #for z in range(100):
+    while (factibilidad == 0).any():        
+        #if (factibilidad == 1).all():
             #print(f"todas factibles")
             #print(f"soluciones {soluciones}")
-            break
+        #    break
 
     
         assert factibilidad.shape[0] == n, f"numero de factibilidades {factibilidad.shape[0]} distinto de numero de soluciones {n}"
@@ -50,7 +51,7 @@ def reparaSoluciones(soluciones, restricciones, pesos):
         columnas = np.any(factibilidad==0, axis=1)
         #print(f"columnas {columnas}")
         #exit()
-        nCols = 3
+        nCols = 10
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
         #print(f"ponderaciones {ponderaciones.shape}")
         #print(f"columnas elegidas {colsElegidas}")
@@ -83,7 +84,7 @@ def reparaSoluciones(soluciones, restricciones, pesos):
         #print(f'valores distintos de 0 en columnas reparar mejores columnas? {(soluciones[:,mejorColumna] != 0).any()}')
         #print(f'valores distintos de 0 en columnas reparar columnas random? {(soluciones[:,colRandom] != 0).all()}')
 
-        if np.random.uniform() < 0.6:
+        if np.random.uniform() < 0.3:
             #print(f"reparando en mejor columna")
             soluciones[columnas,colsElegidas[columnas,mejorColumna]] = 1
         else:
