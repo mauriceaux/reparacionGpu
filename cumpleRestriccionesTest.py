@@ -30,9 +30,10 @@ for i in range(5):
     #sols = problema.generarSolsAlAzar(nsol)
     #sols = np.random.randint(0,2,(nsol,problema.instance.get_columns()), dtype=np.int8)
     sols = np.zeros((nsol,problema.instance.get_columns()), dtype=np.int8)
+    #sols = np.ones((nsol,problema.instance.get_columns()), dtype=np.int8)
     #print(f"{np.random.randint(0,problema.instance.get_columns(),(nsol,3), dtype=np.int16)}")
     #print(f"{sols[np.arange(sols.shape[0]),np.random.randint(0,problema.instance.get_columns(),(3,nsol), dtype=np.int16)]}")
-    sols[np.arange(sols.shape[0]),np.random.randint(0,20,(3,nsol), dtype=np.int16)]=1
+    sols[np.arange(sols.shape[0]),np.random.randint(0,sols.shape[1],(3,nsol), dtype=np.int16)]=1
     #print(sols)
     #exit()
     #sols = np.ones((nsol,problema.instance.get_columns()), dtype=np.int8)

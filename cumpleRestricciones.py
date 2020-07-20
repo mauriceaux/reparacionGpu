@@ -29,6 +29,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
     columnas = np.arange(soluciones.shape[0])
     #print(f"soluciones\n{soluciones}")
     #for z in range(150):
+    cont = 0
     while (factibilidad == 0).any():        
         #if (factibilidad == 1).all():
             #print(f"todas factibles")
@@ -86,12 +87,31 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f'valores distintos de 0 en columnas reparar mejores columnas? {(soluciones[:,mejorColumna] != 0).any()}')
         #print(f'valores distintos de 0 en columnas reparar columnas random? {(soluciones[:,colRandom] != 0).all()}')
 
-        if np.random.uniform() < 0.3:
+        if np.random.uniform() < 0.5:
             #print(f"reparando en mejor columna")
             soluciones[columnas,colsElegidas[columnas,mejorColumna]] = 1
         else:
             #print(f"reparando en columna random")
             soluciones[columnas,colsElegidas[columnas,colRandom]] = 1
+        if np.random.uniform() < 0.3:
+            #mejorar columnas
+            #selecciono una columna en 1 al azar
+            #pongo un 0 en esa columna
+            #print(f"soluciones {soluciones}")
+            colsUno = np.argwhere(soluciones==1)
+            #print(colsUno)
+            randRow = np.random.randint(0,colsUno.shape[0])
+            #print(colsUno[randRow,1])
+            #print(f"random index {randIdx}")
+            #print(f"cols uno en rand index {colsUno[randIdx==1]}")
+            #randCol = np.random.randint(0,colsUno.shape[1])
+            #print(f"soluciones antes {soluciones}")
+            soluciones[colsUno[randRow,0],colsUno[randRow,1]] = 0
+            #print(f"soluciones despues {soluciones}")
+            #exit()
+            #np.random.randint(0,2,size=(colsUno.shape))
+            #colsMejorar = 
+        cont += 1
         #soluciones
         #exit()
 
@@ -104,6 +124,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #soluciones += reparaciones
 
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
+        #print(f"factibilidad {100*np.count_nonzero(factibilidad == 1)/factibilidad.shape[1]}%\n{factibilidad}")
         #print(f"factibilidad \n{factibilidad}")
 
         #print(f"soluciones\n{soluciones}")
