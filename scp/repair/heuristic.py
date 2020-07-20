@@ -223,6 +223,7 @@ def SeleccionaColumna6(Pesos, Matrix, R,S):
     ColumnWeight = ColumnWeight[ColumnWeight[:,1].argsort()]
 
     # We need to get the S complement
+    Option1=1
     if Option1 == 0:
         #print tam, Option1, len(ColumnWeight)
         tam = min(len(ColumnWeight),10)

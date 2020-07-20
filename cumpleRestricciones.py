@@ -18,7 +18,7 @@ COL = 100
 
 
 
-def reparaSoluciones(soluciones, restricciones, pesos):
+def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
     soluciones = np.array(soluciones, dtype=np.int8)
     restricciones = np.array(restricciones, dtype=np.int8)
     n,m = soluciones.shape
@@ -28,7 +28,7 @@ def reparaSoluciones(soluciones, restricciones, pesos):
     factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
     columnas = np.arange(soluciones.shape[0])
     #print(f"soluciones\n{soluciones}")
-    #for z in range(100):
+    #for z in range(150):
     while (factibilidad == 0).any():        
         #if (factibilidad == 1).all():
             #print(f"todas factibles")
@@ -42,16 +42,18 @@ def reparaSoluciones(soluciones, restricciones, pesos):
         
         
         #print(f"restricciones\n{restricciones}")
-        #print(f"factibilidad \n{factibilidad}")
+        #print(f"factibilidad \n{np.count_nonzero(factibilidad == 1)/factibilidad.shape[1]}")
+        #print(f"factibilidad {100*np.count_nonzero(factibilidad == 1)/factibilidad.shape[1]}%\n{factibilidad}")
         #print(f"pesos \n{pesos}")
-        ponderaciones = _ponderarColsReparar(restricciones, factibilidad, pesos)
+        ponderaciones = _ponderarColsReparar(restricciones, factibilidad, pesos, pondRestricciones)
         #return factibilidad
         ponderaciones[ponderaciones==0] = np.max(ponderaciones)*2
+        #ponderaciones[ponderaciones==0] = 1000
         #print(f"ponderaciones \n{ponderaciones}")
         columnas = np.any(factibilidad==0, axis=1)
         #print(f"columnas {columnas}")
         #exit()
-        nCols = 10
+        nCols = 5
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
         #print(f"ponderaciones {ponderaciones.shape}")
         #print(f"columnas elegidas {colsElegidas}")
@@ -102,7 +104,7 @@ def reparaSoluciones(soluciones, restricciones, pesos):
         #soluciones += reparaciones
 
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
-
+        #print(f"factibilidad \n{factibilidad}")
 
         #print(f"soluciones\n{soluciones}")
         #exit()
@@ -126,7 +128,7 @@ def _procesarFactibilidadGPU(soluciones, restricciones):
 
     return resultado_global_mem.copy_to_host()
 
-def _ponderarColsReparar(restricciones, factibilidad, pesos):
+def _ponderarColsReparar(restricciones, factibilidad, pesos, pondRestricciones):
     ponderaciones = np.zeros((factibilidad.shape[0], restricciones.shape[1]), dtype=np.float32)
     #iniciar kernel
     threadsperblock = (NSOL, COL)
@@ -135,11 +137,12 @@ def _ponderarColsReparar(restricciones, factibilidad, pesos):
     blockspergrid = (blockspergrid_x, blockspergrid_y)
     sol_global_mem = cuda.to_device(restricciones)
     fact_global_mem = cuda.to_device(factibilidad)
+    pondRestricciones_mem = cuda.to_device(pondRestricciones)
     pesos_mem = cuda.to_device(pesos)
     resultado_global_mem = cuda.to_device(ponderaciones)
 
     #llamar kernel
-    kernelPonderarGPU[blockspergrid, threadsperblock](sol_global_mem,fact_global_mem,pesos_mem, resultado_global_mem)
+    kernelPonderarGPU[blockspergrid, threadsperblock](sol_global_mem,fact_global_mem,pesos_mem, pondRestricciones_mem, resultado_global_mem)
 
     return resultado_global_mem.copy_to_host()
 
@@ -214,13 +217,14 @@ def kernelFactibilidadGPU(soluciones, restricciones, resultado):
 
 
 @cuda.jit
-def kernelPonderarGPU(restricciones, factibilidad, pesos, cReparar):
+def kernelPonderarGPU(restricciones, factibilidad, pesos, pondRestricciones, cReparar):
     
     #leer soluciones y restricciones a procesar
     #solTmp = cuda.shared.array(shape=(NSOL, COL), dtype=uint8)
     restTmp = cuda.shared.array(shape=(COL), dtype=float32)
     pesosTmp = cuda.shared.array(shape=(COL), dtype=float32)
     infactTmp = cuda.shared.array(shape=(NSOL), dtype=float32)
+    pondRestriccionesTmp = cuda.shared.array(shape=(1), dtype=float32)
     #resultadoTmp = cuda.shared.array(shape=(NSOL, MRES), dtype=uint8)
     solIdx, colIdx = cuda.grid(2)
 
@@ -240,9 +244,12 @@ def kernelPonderarGPU(restricciones, factibilidad, pesos, cReparar):
     cuda.syncthreads()
 
     for res in range(restricciones.shape[0]):
+        if tx == 0 and ty == 0:
+            pondRestriccionesTmp[0] = pondRestricciones[res]
 
         if tx == 0:
             restTmp[ty] = restricciones[res,colIdx]
+            
         if ty == 0:
             infactTmp[tx] = factibilidad[solIdx,res]
 
@@ -250,11 +257,13 @@ def kernelPonderarGPU(restricciones, factibilidad, pesos, cReparar):
         cuda.syncthreads()
 
         if infactTmp[tx] == 0:
-            tmp += restTmp[ty]
+            tmp += restTmp[ty] * pondRestriccionesTmp[0]
+            #tmp += restTmp[ty]
 
         cuda.syncthreads()
     if tmp > 0:
-        cReparar[solIdx,colIdx] = pesosTmp[ty] / tmp
+        cReparar[solIdx,colIdx] = ( pesosTmp[ty] / tmp )
+        #cReparar[solIdx,colIdx] = 1 / tmp
 
 
 @cuda.jit()
