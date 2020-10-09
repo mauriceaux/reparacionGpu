@@ -24,12 +24,12 @@ pondRestricciones = 1/np.sum(problema.instance.get_r(), axis=1)
 #sols = np.zeros((50, problema.getNumDim()), dtype=np.float)
 #sols = [ [1.,1.,1.,0.,1.,1.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,1.,1.,1.,1.,0.,1.,1.,0.,1.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,1.,0.,1.,1.,1.,1.,1.,0.,1.,0.,1.,0.,0.,1.,1.,0.,0.,1.,1.,0.,1.,0.,0.,1.,1.,1.,0.,0.,1.,1.,1.,0.,0.,1.,0.,0.,0.,1.,1.,0.,0.,1.,0.,1.,0.,1.,0.,0.,0.,0.,1.,0.,1.,0.,0.,0.,0.,0.,1.,0.,0.,0.,1.,1.,1.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,0.,1.,0.,0.,0.,1.,1.,0.,1.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.]]
 #sols = [ [1.,1.,1.,0.,1.,1.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,1.,1.,1.,1.,0.,1.,1.,0.,1.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,1.,0.,1.,1.,1.,1.,1.,0.,1.,0.,1.,0.,0.,1.,1.,0.,0.,0.,1.,0.,1.,0.,0.,1.,1.,1.,0.,0.,1.,1.,1.,0.,0.,1.,0.,1.,0.,1.,1.,0.,0.,1.,0.,1.,0.,1.,0.,0.,0.,0.,1.,0.,1.,0.,0.,1.,0.,0.,1.,0.,0.,0.,1.,1.,1.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,1.,1.,0.,1.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.,0.,0.,0.,0.,0.,1.,0.,0.,0.]]
-for i in range(5):
+for i in range(1):
     nsol = 1
     print(f"creando {nsol} soluciones al azar")
     #sols = problema.generarSolsAlAzar(nsol)
-    #sols = np.random.randint(0,2,(nsol,problema.instance.get_columns()), dtype=np.int8)
-    sols = np.zeros((nsol,problema.instance.get_columns()), dtype=np.int8)
+    sols = np.random.randint(0,2,(nsol,problema.instance.get_columns()), dtype=np.int8)
+    #ols = np.zeros((nsol,problema.instance.get_columns()), dtype=np.int8)
     #sols = np.ones((nsol,problema.instance.get_columns()), dtype=np.int8)
     #print(f"{np.random.randint(0,problema.instance.get_columns(),(nsol,3), dtype=np.int16)}")
     #print(f"{sols[np.arange(sols.shape[0]),np.random.randint(0,problema.instance.get_columns(),(3,nsol), dtype=np.int16)]}")

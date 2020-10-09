@@ -307,6 +307,7 @@ def heuristByCols(pesos,uRows,pCols,dictCols):
         ColumnWeight[i,1] = float(pesos[pCols[i]])/len(list(set(lRows).intersection(set(uRows))))
     ColumnWeight = ColumnWeight[ColumnWeight[:,1].argsort()]
     Option1 = np.random.randint(0,5)
+    Option1 = 2
     if Option1 == 0:
         #print tam, Option1, len(ColumnWeight)
         tam = min(len(ColumnWeight),10)
@@ -323,4 +324,4 @@ def heuristByCols(pesos,uRows,pCols,dictCols):
         #print('El valor del elemento',ColumnWeight[0,0])
         column = int(ColumnWeight[0,0])
     #print 'El calculo', column
-    return column
+    return column, ColumnWeight[0,1]

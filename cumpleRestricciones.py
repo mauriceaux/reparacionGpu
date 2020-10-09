@@ -50,14 +50,14 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #return factibilidad
         ponderaciones[ponderaciones==0] = np.max(ponderaciones)*2
         #ponderaciones[ponderaciones==0] = 1000
-        #print(f"ponderaciones \n{ponderaciones}")
+        #print(f"ponderaciones reparacion gpu {ponderaciones}")
         columnas = np.any(factibilidad==0, axis=1)
         #print(f"columnas {columnas}")
         #exit()
         nCols = 5
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
         #print(f"ponderaciones {ponderaciones.shape}")
-        #print(f"columnas elegidas {colsElegidas}")
+        #print(f"columnas elegidas reparacion gpu {colsElegidas}")
         #print(f"columnas {columnas.shape}")
         #print(f"ponderaciones elegidas {ponderaciones[columnas,colsElegidas.T].T}")
         #exit()
@@ -68,6 +68,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f"ponderaciones {ponderaciones}")
         #print(f"(ponderaciones[columnas,colsElegidas.T] {ponderaciones[columnas,colsElegidas.T[:,columnas]]}")
         mejorColumna = np.argmin(ponderaciones[columnas,colsElegidas.T[:,columnas]].T, axis=1)
+        #print(f"mejor columna gpu {mejorColumna}")
         #posMejorColumna[-1,:] = mejorColumna
         
         #posMejorColumna.reshape(2,2)
@@ -87,30 +88,33 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f'valores distintos de 0 en columnas reparar mejores columnas? {(soluciones[:,mejorColumna] != 0).any()}')
         #print(f'valores distintos de 0 en columnas reparar columnas random? {(soluciones[:,colRandom] != 0).all()}')
 
-        if np.random.uniform() < 0.5:
+        #print(f"columnas {columnas}")
+        print(f"colsElegidas[columnas,mejorColumna] {colsElegidas[columnas,mejorColumna]} ponderacion {ponderaciones[columnas,mejorColumna]}")
+        
+        if np.random.uniform() < 0.2:
             #print(f"reparando en mejor columna")
             soluciones[columnas,colsElegidas[columnas,mejorColumna]] = 1
         else:
             #print(f"reparando en columna random")
             soluciones[columnas,colsElegidas[columnas,colRandom]] = 1
-        if np.random.uniform() < 0.3:
-            #mejorar columnas
-            #selecciono una columna en 1 al azar
-            #pongo un 0 en esa columna
-            #print(f"soluciones {soluciones}")
-            colsUno = np.argwhere(soluciones==1)
-            #print(colsUno)
-            randRow = np.random.randint(0,colsUno.shape[0])
-            #print(colsUno[randRow,1])
-            #print(f"random index {randIdx}")
-            #print(f"cols uno en rand index {colsUno[randIdx==1]}")
-            #randCol = np.random.randint(0,colsUno.shape[1])
-            #print(f"soluciones antes {soluciones}")
-            soluciones[colsUno[randRow,0],colsUno[randRow,1]] = 0
-            #print(f"soluciones despues {soluciones}")
-            #exit()
-            #np.random.randint(0,2,size=(colsUno.shape))
-            #colsMejorar = 
+        # if np.random.uniform() < 0.3:
+        #     #mejorar columnas
+        #     #selecciono una columna en 1 al azar
+        #     #pongo un 0 en esa columna
+        #     #print(f"soluciones {soluciones}")
+        #     colsUno = np.argwhere(soluciones==1)
+        #     #print(colsUno)
+        #     randRow = np.random.randint(0,colsUno.shape[0])
+        #     #print(colsUno[randRow,1])
+        #     #print(f"random index {randIdx}")
+        #     #print(f"cols uno en rand index {colsUno[randIdx==1]}")
+        #     #randCol = np.random.randint(0,colsUno.shape[1])
+        #     #print(f"soluciones antes {soluciones}")
+        #     soluciones[colsUno[randRow,0],colsUno[randRow,1]] = 0
+        #     #print(f"soluciones despues {soluciones}")
+        #     #exit()
+        #     #np.random.randint(0,2,size=(colsUno.shape))
+        #     #colsMejorar = 
         cont += 1
         #soluciones
         #exit()

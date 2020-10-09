@@ -113,29 +113,29 @@ def obtieneElemento(lSolucion, matrix, pesos, rHeuristic,dictcHeuristics,dict,cH
 
 def obtieneElemento2(lSolucion,matrix,pesos,rHeuristic,dictcHeuristics,dict,cHeuristic,dictCols):
 #    tIni = tU.obtieneTime()
-    uRows = mU.getRows(matrix,lSolucion)
+    filasNoCubiertas = mU.getRows(matrix,lSolucion)
     uColumns = []
-    if len(uRows) > 0:
-        pRows = he.getProposedRows(uRows,rHeuristic,lparam = 10 )
-        #print ('pRows',pRows)
-        for i in range(0,len(pRows)):
-            uColumns =  list(set(uColumns + dict[pRows[i]]))
+    if len(filasNoCubiertas) > 0:
+        filasPropuestas = he.getProposedRows(filasNoCubiertas,rHeuristic,lparam = 10 )
+        #print ('filasPropuestas reparacion cpu',filasPropuestas)
+        for i in range(0,len(filasPropuestas)):
+            uColumns =  list(set(uColumns + dict[filasPropuestas[i]]))
             #print ('uColumns',uColumns,dict)
-            #print 'El numero de columnas', len(uColumns), pRows[i],dict[int(pRows[i])]
+            #print 'El numero de columnas', len(uColumns), filasPropuestas[i],dict[int(filasPropuestas[i])]
 
         #-----------------------------------------------------------------------------------------------
         # LAs Heuristicas
         #-----------------------------------------------------------------------------------------------
-        #column = he.SeleccionaColumna6(pesos,matrix,pRows,lSolucion)
+        #column = he.SeleccionaColumna6(pesos,matrix,filasPropuestas,lSolucion)
 
         #-----------------------------------------------------------------------------------------------
         # Muy Bien con Scheduling
         #-----------------------------------------------------------------------------------------------
-        #column = he.SeleccionaColumnaNueva(pesos, matrix, pRows,uColumns)
+        #column = he.SeleccionaColumnaNueva(pesos, matrix, filasPropuestas,uColumns)
 
-        column = he.heuristByCols(pesos,uRows,uColumns,dictCols)
-
-        lSolucion.append(int(column))
+        columnasCubrir, ponderacion = he.heuristByCols(pesos,filasNoCubiertas,uColumns,dictCols)
+        print (f'columnasCubrir reparacion cpu {columnasCubrir} ponderacion {ponderacion}')
+        lSolucion.append(int(columnasCubrir))
         estado = 0
     else:
         estado = 1
