@@ -51,13 +51,15 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         ponderaciones[ponderaciones==0] = np.max(ponderaciones)*2
         #ponderaciones[ponderaciones==0] = 1000
         #print(f"ponderaciones reparacion gpu {ponderaciones}")
+        
         columnas = np.any(factibilidad==0, axis=1)
-        #print(f"columnas {columnas}")
+        #print(f"columnas incumplidas {columnas}")
         #exit()
         nCols = 5
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
         #print(f"ponderaciones {ponderaciones.shape}")
         #print(f"columnas elegidas reparacion gpu {colsElegidas}")
+        #print(f"valor columnas elegidas {soluciones[columnas,colsElegidas]}")
         #print(f"columnas {columnas.shape}")
         #print(f"ponderaciones elegidas {ponderaciones[columnas,colsElegidas.T].T}")
         #exit()
@@ -69,6 +71,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f"(ponderaciones[columnas,colsElegidas.T] {ponderaciones[columnas,colsElegidas.T[:,columnas]]}")
         mejorColumna = np.argmin(ponderaciones[columnas,colsElegidas.T[:,columnas]].T, axis=1)
         #print(f"mejor columna gpu {mejorColumna}")
+        #exit()
         #posMejorColumna[-1,:] = mejorColumna
         
         #posMejorColumna.reshape(2,2)
@@ -89,9 +92,9 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f'valores distintos de 0 en columnas reparar columnas random? {(soluciones[:,colRandom] != 0).all()}')
 
         #print(f"columnas {columnas}")
-        print(f"colsElegidas[columnas,mejorColumna] {colsElegidas[columnas,mejorColumna]} ponderacion {ponderaciones[columnas,mejorColumna]}")
+        #print(f"colsElegidas[columnas,mejorColumna] {colsElegidas[columnas,mejorColumna]} ponderacion {ponderaciones[columnas,colsElegidas[columnas,mejorColumna]]}")
         
-        if np.random.uniform() < 0.2:
+        if np.random.uniform() < 0.8:
             #print(f"reparando en mejor columna")
             soluciones[columnas,colsElegidas[columnas,mejorColumna]] = 1
         else:
