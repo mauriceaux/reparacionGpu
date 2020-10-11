@@ -38,7 +38,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
 
     
         assert factibilidad.shape[0] == n, f"numero de factibilidades {factibilidad.shape[0]} distinto de numero de soluciones {n}"
-        assert factibilidad.shape[0] == n, f"numero de restricciones en factibilidades {factibilidad.shape[1]} distinto de numero de restricciones {restricciones.shape[0]}"
+        assert factibilidad.shape[1] == restricciones.shape[0], f"numero de restricciones en factibilidades {factibilidad.shape[1]} distinto de numero de restricciones {restricciones.shape[0]}"
         #obtengo matriz que representa la suma de todas las columnas incumplidas de numero soluciones x numero columnas soluciones
         
         
@@ -48,15 +48,18 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f"pesos \n{pesos}")
         ponderaciones = _ponderarColsReparar(restricciones, factibilidad, pesos, pondRestricciones)
         #return factibilidad
-        ponderaciones[ponderaciones==0] = np.max(ponderaciones)*2
+        #ponderaciones[ponderaciones==0] = np.max(ponderaciones)*2
+        ponderaciones[ponderaciones==0] = np.inf
         #ponderaciones[ponderaciones==0] = 1000
         #print(f"ponderaciones reparacion gpu {ponderaciones}")
         
-        columnas = np.any(factibilidad==0, axis=1)
+        idxSolsInfactibles = np.any(factibilidad==0, axis=1)
         #print(f"columnas incumplidas {columnas}")
         #exit()
-        nCols = 5
+        nCols = 10
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
+
+        #print(f"valor en solucion columnas elegidas {colsElegidas[ponderaciones[idxSolsInfactibles,colsElegidas] < np.inf]}")
         #print(f"ponderaciones {ponderaciones.shape}")
         #print(f"columnas elegidas reparacion gpu {colsElegidas}")
         #print(f"valor columnas elegidas {soluciones[columnas,colsElegidas]}")
@@ -69,7 +72,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f"colsElegidas.T {colsElegidas.T}")
         #print(f"ponderaciones {ponderaciones}")
         #print(f"(ponderaciones[columnas,colsElegidas.T] {ponderaciones[columnas,colsElegidas.T[:,columnas]]}")
-        mejorColumna = np.argmin(ponderaciones[columnas,colsElegidas.T[:,columnas]].T, axis=1)
+        mejorColumna = np.argmin(ponderaciones[idxSolsInfactibles,colsElegidas.T[:,idxSolsInfactibles]].T, axis=1)
         #print(f"mejor columna gpu {mejorColumna}")
         #exit()
         #posMejorColumna[-1,:] = mejorColumna
@@ -82,7 +85,8 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f"mejor columna {mejorColumna}")
         #posColumnaRandom = np.zeros((soluciones.shape[0],2), dtype=np.int32)
         #posColumnaRandom[0,:] = np.arange(soluciones.shape[0])
-        colRandom  = np.random.randint(colsElegidas.shape[1], size=(np.count_nonzero(columnas)))
+        colRandom  = np.random.randint(colsElegidas.shape[1], size=(np.count_nonzero(idxSolsInfactibles)))
+        #print(f"col random con ponderacion infinita {ponderaciones[idxSolsInfactibles,colsElegidas[soluciones[idxSolsInfactibles,colsElegidas[columnas,colRandom]],colRandom]]}")
         #posColumnaRandom[-1,:] = colRandom
         #colRandom = colRandom.reshape(-1,1)
         #print(f"columna al azar {colRandom}")
@@ -92,14 +96,18 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f'valores distintos de 0 en columnas reparar columnas random? {(soluciones[:,colRandom] != 0).all()}')
 
         #print(f"columnas {columnas}")
-        #print(f"colsElegidas[columnas,mejorColumna] {colsElegidas[columnas,mejorColumna]} ponderacion {ponderaciones[columnas,colsElegidas[columnas,mejorColumna]]}")
+        #print(f"ponderaciones random {ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]} cols elegidas {ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]==np.inf}")
+        idxInfinito = ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]==np.inf
+        colRandom[idxInfinito] = mejorColumna[idxInfinito]
+        #exit()
+        #print(f"colsElegidas[columnas,mejorColumna] {colsElegidas[idxSolsInfactibles,mejorColumna]} ponderacion {ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles]]}")
         
         if np.random.uniform() < 0.8:
             #print(f"reparando en mejor columna")
-            soluciones[columnas,colsElegidas[columnas,mejorColumna]] = 1
+            soluciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,mejorColumna]] = 1
         else:
             #print(f"reparando en columna random")
-            soluciones[columnas,colsElegidas[columnas,colRandom]] = 1
+            soluciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom]] = 1
         # if np.random.uniform() < 0.3:
         #     #mejorar columnas
         #     #selecciono una columna en 1 al azar
