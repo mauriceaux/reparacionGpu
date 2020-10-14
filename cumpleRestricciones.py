@@ -58,7 +58,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         idxSolsInfactibles = np.any(factibilidad==0, axis=1)
         #print(f"columnas incumplidas {columnas}")
         #exit()
-        nCols = 5
+        nCols = 10
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
         # print(f"colsElegidas {colsElegidas}")
         noInf = np.argwhere(colsElegidas != np.inf)
@@ -69,7 +69,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         # print(f"indices de colsElegidas no infinitas random {randomNoInf}")
         # print(f"indices de colsElegidas {noInf[randomNoInf]}")
         # print(f"indices de colsElegidas traspuesta {noInf[randomNoInf].T}")
-        noInfT = noInf[randomNoInf]
+        noInfidxs = noInf[randomNoInf]
         #print(f"cols elegidas random {colsElegidas[noInfT[:,0], noInfT[:,1]]}")
         #print(f"valor en solucion columnas elegidas {colsElegidas[ponderaciones[idxSolsInfactibles,colsElegidas] < np.inf]}")
         #print(f"ponderaciones {ponderaciones.shape}")
@@ -99,7 +99,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #posColumnaRandom[0,:] = np.arange(soluciones.shape[0])
         
         #colRandom  = np.random.randint(colsElegidas.shape[1], size=(np.count_nonzero(idxSolsInfactibles)))
-        colRandom = colsElegidas[noInfT[:,0], noInfT[:,1]]
+        colRandom = colsElegidas[noInfidxs[:,0], noInfidxs[:,1]]
         #print(f"colRandom {colRandom}")
         #print(f"col random con ponderacion infinita {ponderaciones[idxSolsInfactibles,colsElegidas[soluciones[idxSolsInfactibles,colsElegidas[columnas,colRandom]],colRandom]]}")
         #posColumnaRandom[-1,:] = colRandom
