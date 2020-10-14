@@ -50,6 +50,8 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #return factibilidad
         #ponderaciones[ponderaciones==0] = np.max(ponderaciones)*2
         ponderaciones[ponderaciones==0] = np.inf
+
+        
         #ponderaciones[ponderaciones==0] = 1000
         #print(f"ponderaciones reparacion gpu {ponderaciones}")
         
@@ -58,7 +60,17 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #exit()
         nCols = 10
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
-
+        # print(f"colsElegidas {colsElegidas}")
+        noInf = np.argwhere(colsElegidas != np.inf)
+        # print(f"ponderaciones no infinitas {noInf}")
+        posNoInf = np.array([np.argwhere(noInf[:,0]==pos).reshape((-1)) for pos in range(soluciones.shape[0])])
+        #print(f"no infinitas todas la posiciones {posNoInf}")
+        randomNoInf = np.array([np.random.choice(posNoInf[pos]) for pos in range(posNoInf.shape[0])]).T
+        # print(f"indices de colsElegidas no infinitas random {randomNoInf}")
+        # print(f"indices de colsElegidas {noInf[randomNoInf]}")
+        # print(f"indices de colsElegidas traspuesta {noInf[randomNoInf].T}")
+        noInfT = noInf[randomNoInf]
+        #print(f"cols elegidas random {colsElegidas[noInfT[:,0], noInfT[:,1]]}")
         #print(f"valor en solucion columnas elegidas {colsElegidas[ponderaciones[idxSolsInfactibles,colsElegidas] < np.inf]}")
         #print(f"ponderaciones {ponderaciones.shape}")
         #print(f"columnas elegidas reparacion gpu {colsElegidas}")
@@ -85,7 +97,10 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #print(f"mejor columna {mejorColumna}")
         #posColumnaRandom = np.zeros((soluciones.shape[0],2), dtype=np.int32)
         #posColumnaRandom[0,:] = np.arange(soluciones.shape[0])
-        colRandom  = np.random.randint(colsElegidas.shape[1], size=(np.count_nonzero(idxSolsInfactibles)))
+        
+        #colRandom  = np.random.randint(colsElegidas.shape[1], size=(np.count_nonzero(idxSolsInfactibles)))
+        colRandom = colsElegidas[noInfT[:,0], noInfT[:,1]]
+        #print(f"colRandom {colRandom}")
         #print(f"col random con ponderacion infinita {ponderaciones[idxSolsInfactibles,colsElegidas[soluciones[idxSolsInfactibles,colsElegidas[columnas,colRandom]],colRandom]]}")
         #posColumnaRandom[-1,:] = colRandom
         #colRandom = colRandom.reshape(-1,1)
@@ -97,8 +112,11 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
 
         #print(f"columnas {columnas}")
         #print(f"ponderaciones random {ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]} cols elegidas {ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]==np.inf}")
-        idxInfinito = ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]==np.inf
-        colRandom[idxInfinito] = mejorColumna[idxInfinito]
+        # idxInfinito = ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]==np.inf
+        # idxNoInfinito = ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom].T]!=np.inf
+        # print(f"idxInfinito {idxInfinito}")
+        # print(f"idxNoInfinito {idxNoInfinito}")
+        # colRandom[idxInfinito] = colRandom[idxNoInfinito]
         #exit()
         #print(f"colsElegidas[columnas,mejorColumna] {colsElegidas[idxSolsInfactibles,mejorColumna]} ponderacion {ponderaciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles]]}")
         
@@ -107,7 +125,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
             soluciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,mejorColumna]] = 1
         else:
             #print(f"reparando en columna random")
-            soluciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,colRandom]] = 1
+            soluciones[idxSolsInfactibles,colRandom[idxSolsInfactibles]] = 1
         # if np.random.uniform() < 0.3:
         #     #mejorar columnas
         #     #selecciono una columna en 1 al azar
