@@ -58,7 +58,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         idxSolsInfactibles = np.any(factibilidad==0, axis=1)
         #print(f"columnas incumplidas {columnas}")
         #exit()
-        nCols = 10
+        nCols = 5
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
         # print(f"colsElegidas {colsElegidas}")
         noInf = np.argwhere(colsElegidas != np.inf)
