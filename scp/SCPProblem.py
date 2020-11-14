@@ -54,8 +54,8 @@ class SCPProblem():
         return 'SCP'
     
     def getNumDim(self):
-        #return self.instance.columns
-        return self.particiones.shape[0]
+        return self.instance.columns
+        #return self.particiones.shape[0]
 
     def getRangoSolucion(self):
         return {'max': self.rangeMax, 'min':np.zeros(self.rangeMax.shape[0])}
