@@ -33,11 +33,6 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
     
         ponderaciones = _ponderarColsReparar(restricciones, factibilidad, pesos, pondRestricciones)
         ponderaciones[ponderaciones==0] = np.inf
-        # print(ponderaciones)
-
-
-        p = np.array([(col, ponderaciones[0,col]) for col in range(ponderaciones.shape[1]) if ponderaciones[0,col] < np.inf])
-        p = p[p[:,1].argsort()]
         
         idxSolsInfactibles = np.any(factibilidad==0, axis=1)
         nCols = 10
