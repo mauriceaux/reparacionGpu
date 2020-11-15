@@ -38,32 +38,35 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         idxSolsInfactibles = np.any(factibilidad==0, axis=1)
         nCols = 10
         colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
-
-        noInf = np.argwhere(colsElegidas != np.inf)
-        posNoInf = np.array([np.argwhere(noInf[:,0]==pos).reshape((-1)) for pos in range(soluciones.shape[0])])
-        randomNoInf = np.array([np.random.choice(posNoInf[pos]) for pos in range(posNoInf.shape[0])]).T
-        noInfidxs = noInf[randomNoInf]
-        colRandom = colsElegidas[noInfidxs[:,0], noInfidxs[:,1]]
-        mejorColumna = np.argmin(ponderaciones[idxSolsInfactibles,colsElegidas.T[:,idxSolsInfactibles]].T, axis=1)
+        # INDICES SOLUCIONES A REPARAR DETERMINISTA Y RANDOM
         random = np.random.uniform(size=(idxSolsInfactibles[idxSolsInfactibles==True].shape)) < DETERMINISTA
-        
-
         idxDeterministas = idxSolsInfactibles.copy()
         idxDeterministas[idxSolsInfactibles == True] = random
         idxNoDeterministas = idxSolsInfactibles.copy()
         idxNoDeterministas[idxSolsInfactibles == True] = random==False
+        # MEJOR COLUMNA REPARAR
+        mejorColumna = np.argmin(ponderaciones[idxSolsInfactibles,colsElegidas.T[:,idxSolsInfactibles]].T, axis=1)
+        # COLUMNAS RANDOM REPARAR
+        ponderacionesElegidasRandom = ponderaciones[np.argwhere(idxNoDeterministas),colsElegidas[idxNoDeterministas]]
+        idcolNoInf = np.argwhere(ponderacionesElegidasRandom!=np.inf)
+        idcolNoInfRandom = [np.random.choice(idcolNoInf[idcolNoInf[:,0]==pos][:,1]) for pos in range(ponderacionesElegidasRandom.shape[0])]
+        colsElegidasRandom = colsElegidas[idxNoDeterministas][np.arange(colsElegidas[idxNoDeterministas].shape[0]),idcolNoInfRandom]
+        columnas = np.arange(idxNoDeterministas[idxNoDeterministas==True].shape[0]).reshape(-1,1)
 
+        # VALIDACION, NO SE DEBEN REPARAR COLUMNAS QUE CONTIENEN 1
         if (idxDeterministas[idxSolsInfactibles == True] == idxNoDeterministas[idxSolsInfactibles == True]).any():
             raise Exception(f"No se eligieron bien las columnas a reparar")
         if(soluciones[idxDeterministas,colsElegidas[idxDeterministas,mejorColumna[idxDeterministas[idxSolsInfactibles]]]] == 1).any():
-            
             raise Exception(F"Mejores columnas mal elegidas")
 
-        # if(soluciones[idxNoDeterministas,colRandom[idxNoDeterministas]] == 1).any():
-        #     raise Exception(f"Columnas random mal elegidas")
+        if(soluciones[np.argwhere(idxNoDeterministas),colsElegidasRandom.reshape((-1,1))] == 1).any():
+            raise Exception(f"Columnas random mal elegidas")
+
+        # print(np.argwhere(idxNoDeterministas))
+        # exit()
 
         soluciones[idxDeterministas,colsElegidas[idxDeterministas,mejorColumna[idxDeterministas[idxSolsInfactibles]]]] = 1
-        soluciones[idxNoDeterministas,colRandom[idxNoDeterministas]] = 1
+        soluciones[np.argwhere(idxNoDeterministas),colsElegidasRandom.reshape((-1,1))] = 1
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
     return soluciones
     
