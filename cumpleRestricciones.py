@@ -1,5 +1,6 @@
 import numpy as np
 from numba import cuda, float32, jit, uint8, int8, uint16, int32
+import numba
 import math
 import sys
 from numba.cuda.random import create_xoroshiro128p_states, xoroshiro128p_uniform_float32
@@ -42,13 +43,27 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         posNoInf = np.array([np.argwhere(noInf[:,0]==pos).reshape((-1)) for pos in range(soluciones.shape[0])])
         randomNoInf = np.array([np.random.choice(posNoInf[pos]) for pos in range(posNoInf.shape[0])]).T
         noInfidxs = noInf[randomNoInf]
-        mejorColumna = np.argmin(ponderaciones[idxSolsInfactibles,colsElegidas.T[:,idxSolsInfactibles]].T, axis=1)
         colRandom = colsElegidas[noInfidxs[:,0], noInfidxs[:,1]]
-        if np.random.uniform() < DETERMINISTA:
-            soluciones[idxSolsInfactibles,colsElegidas[idxSolsInfactibles,mejorColumna]] = 1
-        else:
-            soluciones[idxSolsInfactibles,colRandom[idxSolsInfactibles]] = 1
-        cont += 1
+        mejorColumna = np.argmin(ponderaciones[idxSolsInfactibles,colsElegidas.T[:,idxSolsInfactibles]].T, axis=1)
+        random = np.random.uniform(size=(idxSolsInfactibles[idxSolsInfactibles==True].shape)) < DETERMINISTA
+        
+
+        idxDeterministas = idxSolsInfactibles.copy()
+        idxDeterministas[idxSolsInfactibles == True] = random
+        idxNoDeterministas = idxSolsInfactibles.copy()
+        idxNoDeterministas[idxSolsInfactibles == True] = random==False
+
+        if (idxDeterministas[idxSolsInfactibles == True] == idxNoDeterministas[idxSolsInfactibles == True]).any():
+            raise Exception(f"No se eligieron bien las columnas a reparar")
+        if(soluciones[idxDeterministas,colsElegidas[idxDeterministas,mejorColumna[idxDeterministas[idxSolsInfactibles]]]] == 1).any():
+            
+            raise Exception(F"Mejores columnas mal elegidas")
+
+        if(soluciones[idxNoDeterministas,colRandom[idxNoDeterministas]] == 1).any():
+            raise Exception(f"Columnas random mal elegidas")
+
+        soluciones[idxDeterministas,colsElegidas[idxDeterministas,mejorColumna[idxDeterministas[idxSolsInfactibles]]]] = 1
+        soluciones[idxNoDeterministas,colRandom[idxNoDeterministas]] = 1
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
     return soluciones
     
