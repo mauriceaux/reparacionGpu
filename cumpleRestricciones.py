@@ -59,8 +59,8 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
             
             raise Exception(F"Mejores columnas mal elegidas")
 
-        if(soluciones[idxNoDeterministas,colRandom[idxNoDeterministas]] == 1).any():
-            raise Exception(f"Columnas random mal elegidas")
+        # if(soluciones[idxNoDeterministas,colRandom[idxNoDeterministas]] == 1).any():
+        #     raise Exception(f"Columnas random mal elegidas")
 
         soluciones[idxDeterministas,colsElegidas[idxDeterministas,mejorColumna[idxDeterministas[idxSolsInfactibles]]]] = 1
         soluciones[idxNoDeterministas,colRandom[idxNoDeterministas]] = 1
