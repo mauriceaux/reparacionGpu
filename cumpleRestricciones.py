@@ -32,20 +32,73 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         assert factibilidad.shape[0] == n, f"numero de factibilidades {factibilidad.shape[0]} distinto de numero de soluciones {n}"
         assert factibilidad.shape[1] == restricciones.shape[0], f"numero de restricciones en factibilidades {factibilidad.shape[1]} distinto de numero de restricciones {restricciones.shape[0]}"
     
-        ponderaciones = _ponderarColsReparar(restricciones, factibilidad, pesos, pondRestricciones)
+        # ELEGIR RESTRICCIONES
+
+
+
+        infactibles = factibilidad.copy()
+        infactibles = infactibles.astype(float)
+        infactibles[infactibles > 0] = -np.inf
+        infactibles[infactibles == 0] = 1
+        infactiblesPonderadas = infactibles*pondRestricciones
+        infactiblesPonderadas[factibilidad==1] = -np.inf
+        # print(f"infactibles * pondRestricciones {infactiblesPonderadas}")
+        # print(f"infactiblesPonderadas {infactiblesPonderadas}")
+        nCols = 10
+        # infactiblesSel = np.argpartition(infactiblesPonderadas,nCols,axis=1)[:,:nCols]
+        #infactiblesSel = np.argsort(infactiblesPonderadas, axis=1)[::-1][:,:nCols]
+        infactiblesSel = np.argsort(-infactiblesPonderadas, axis=1)[:,:nCols]
+        # print(f"infactibles seleccionadas {infactiblesSel}")
+        # exit()
+        # print(infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]).reshape(-1,1),infactiblesSel])
+        iPondInfactibles = infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]).reshape(-1,1),infactiblesSel] > 0
+        # iPondInfactibles = np.argwhere(infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]).reshape(-1,1),infactiblesSel] < np.inf)
+        # print(f"infactibles efectivamente infactibles {iPondInfactibles}")
+        # exit()
+        factibilidadTmp = np.ones(factibilidad.shape)
+        for idx in np.argwhere(iPondInfactibles):
+            # print(idx)
+            factibilidadTmp[idx[0], infactiblesSel[idx[0],idx[1]]] = 0
+        factibilidadTmp[factibilidad==1] = 1
+        # print(factibilidadTmp)
+        # print(f"infactibles seleccionadas {infactiblesSel[iPondInfactibles[:,0].reshape(-1,1), iPondInfactibles[:,1].reshape(-1,1)]}")
+
+        # factibilidadTmp[np.arange(factibilidadTmp.shape[0]).reshape(-1,1), infactiblesSel[iPondInfactibles]] = 0
+        # print(factibilidadTmp)
+
+        # print(f"total infactibles: {np.count_nonzero(factibilidadTmp == 0)}")
+        # print(f"total infactibles seleccionadas: {np.count_nonzero(iPondInfactibles)}")
+
+        # # factibilidad(np.arange(factibilidad.shape[0]), infactiblesSel)
+        # exit()
+
+        ponderaciones = _ponderarColsReparar(restricciones, factibilidadTmp, pesos, pondRestricciones)
         ponderaciones[ponderaciones==0] = np.inf
         
-        idxSolsInfactibles = np.any(factibilidad==0, axis=1)
+        idxSolsInfactibles = np.any(factibilidadTmp==0, axis=1)
+        # print(f"idxSolsInfactibles {idxSolsInfactibles}")
         nCols = 10
-        colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
+        # colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
+        # print(f"colsElegidas 1 {colsElegidas}")
+        # print(f"ponderaciones {ponderaciones}")
+        colsElegidas = np.argsort(ponderaciones,axis=1)[:,:nCols]
+        # print(f"colsElegidas 2 {colsElegidas}")
+        # exit()
         # INDICES SOLUCIONES A REPARAR DETERMINISTA Y RANDOM
         random = np.random.uniform(size=(idxSolsInfactibles[idxSolsInfactibles==True].shape)) < DETERMINISTA
         idxDeterministas = idxSolsInfactibles.copy()
-        idxDeterministas[idxSolsInfactibles == True] = random
+        idxDeterministas[idxSolsInfactibles] = random
         idxNoDeterministas = idxSolsInfactibles.copy()
-        idxNoDeterministas[idxSolsInfactibles == True] = random==False
+        idxNoDeterministas[idxSolsInfactibles] = ~random
+        # print(f"idxDeterministas {idxDeterministas}")
+        # print(f"idxNoDeterministas {idxNoDeterministas}")
+        
         # MEJOR COLUMNA REPARAR
-        mejorColumna = np.argmin(ponderaciones[idxSolsInfactibles,colsElegidas.T[:,idxSolsInfactibles]].T, axis=1)
+        # mejorColumna = np.argmin(ponderaciones[idxSolsInfactibles,colsElegidas.T[:,idxSolsInfactibles]].T, axis=1)
+        mejorColumna = colsElegidas[:,0]
+        # print(f"colsElegidas {colsElegidas}")
+        # print(f"mejorColumna {mejorColumna}")
+        # print(f"colsElegidas[mejorColumna] {colsElegidas[mejorColumna]}")
         # COLUMNAS RANDOM REPARAR
         ponderacionesElegidasRandom = ponderaciones[np.argwhere(idxNoDeterministas),colsElegidas[idxNoDeterministas]]
         idcolNoInf = np.argwhere(ponderacionesElegidasRandom!=np.inf)
@@ -56,7 +109,14 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         # VALIDACION, NO SE DEBEN REPARAR COLUMNAS QUE CONTIENEN 1
         if (idxDeterministas[idxSolsInfactibles == True] == idxNoDeterministas[idxSolsInfactibles == True]).any():
             raise Exception(f"No se eligieron bien las columnas a reparar")
-        if(soluciones[idxDeterministas,colsElegidas[idxDeterministas,mejorColumna[idxDeterministas[idxSolsInfactibles]]]] == 1).any():
+        if (~idxDeterministas[idxSolsInfactibles == True]).all() and (~idxNoDeterministas[idxSolsInfactibles == True]).all():
+            raise Exception(f"No se eligio ninguna columna a reparar")
+        if(soluciones[idxDeterministas,mejorColumna[idxDeterministas]] == 1).any():
+            # print(f"soluciones {soluciones}")
+            # print(f"colsElegidas {colsElegidas}")
+            # print(f"mejor columna {mejorColumna}")
+            # print(f"idxDeterministas {idxDeterministas}")
+            # print(f"idxSolsInfactibles {idxSolsInfactibles}")
             raise Exception(F"Mejores columnas mal elegidas")
 
         if(soluciones[np.argwhere(idxNoDeterministas),colsElegidasRandom.reshape((-1,1))] == 1).any():
@@ -64,8 +124,39 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
 
         # print(np.argwhere(idxNoDeterministas))
         # exit()
-
-        soluciones[idxDeterministas,colsElegidas[idxDeterministas,mejorColumna[idxDeterministas[idxSolsInfactibles]]]] = 1
+        # COLUMNAS ELEGIDAS
+        # i=0
+        # j = 0
+        # print(f"sols infactibles {idxSolsInfactibles}")
+        # print(f"random {random}")
+        # for idx in range(idxSolsInfactibles.shape[0]):
+        #     if not idxSolsInfactibles[idx]: continue
+        #     colsInfactibles = [col for col in colsElegidas[idx] if ponderaciones[idx, col] < np.inf]
+        #     pondInfactibles = [ponderaciones[idx,col] for col in range(ponderaciones[idx].shape[0]) if ponderaciones[idx, col] < np.inf]
+        #     # print(f"solucion infactible {i}")
+        #     # print(colsElegidasRandom)
+        #     # print(colsElegidas)
+        #     # print(mejorColumna)
+        #     # print(idx)
+        #     colElegida = 0
+        #     if random[i]:
+        #         colElegida = colsElegidas[idx,mejorColumna[i]]
+        #     else:
+        #         colElegida = colsElegidasRandom[j]
+        #         j+= 1
+        #     # print(f"ponderaciones gpu columnas {colsInfactibles} ponderaciones {pondInfactibles} col elegida {colElegida}")
+        #     print(f"gpu col elegida {colElegida} ponderacion {ponderaciones[idx]} elegidas {colsElegidas[idx]}")
+        #     exit()
+        #     # print(f"gpu ponderacion {ponderaciones}")
+        #     i += 1
+        # PONDERACIONES ELEGIDAS
+        # print(f"idxSolsInfactibles {idxSolsInfactibles}")
+        # print(f"idxDeterministas {idxDeterministas}")
+        # print(f"mejorColumna {mejorColumna}")
+        # print(f"colsElegidas {colsElegidas}")
+        # print(f"elegidas {mejorColumna[idxDeterministas[idxSolsInfactibles]]}")
+        # print(f"fin iteracion")
+        soluciones[idxDeterministas,mejorColumna[idxDeterministas]] = 1
         soluciones[np.argwhere(idxNoDeterministas),colsElegidasRandom.reshape((-1,1))] = 1
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
     return soluciones
@@ -100,7 +191,7 @@ def _ponderarColsReparar(restricciones, factibilidad, pesos, pondRestricciones):
     pondRestricciones_mem = cuda.to_device(pondRestricciones)
     pesos_mem = cuda.to_device(pesos)
     resultado_global_mem = cuda.to_device(ponderaciones)
-
+    
     #llamar kernel
     kernelPonderarGPU[blockspergrid, threadsperblock](sol_global_mem,fact_global_mem,pesos_mem, pondRestricciones_mem, resultado_global_mem)
 
@@ -196,7 +287,7 @@ def kernelPonderarGPU(restricciones, factibilidad, pesos, pondRestricciones, cRe
         cuda.syncthreads()
 
         if infactTmp[tx] == 0:
-            # tmp += restTmp[ty] * pondRestriccionesTmp[0]
+            # tmp += restTmp[ty] + pondRestriccionesTmp[0]
             tmp += restTmp[ty]
         cuda.syncthreads()
     if tmp > 0:
