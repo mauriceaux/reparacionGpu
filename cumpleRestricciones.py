@@ -25,10 +25,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
     restricciones = np.array(restricciones, dtype=np.int8)
     n,m = soluciones.shape
     assert m == restricciones.shape[1], f"numero de columnas distinto en soluciones {m} y restricciones {restricciones.shape[1]}"
-    inicio = datetime.datetime.now()
     factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
-    fin = datetime.datetime.now()
-    print(f"tiempo procesar factibilidad {fin-inicio}")
     columnas = np.arange(soluciones.shape[0])
     cont = 0
     while (factibilidad == 0).any():        
@@ -162,10 +159,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         # print(f"fin iteracion")
         soluciones[idxDeterministas,mejorColumna[idxDeterministas]] = 1
         soluciones[np.argwhere(idxNoDeterministas),colsElegidasRandom.reshape((-1,1))] = 1
-        inicio = datetime.datetime.now()
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
-        fin = datetime.datetime.now()
-        print(f"tiempo procesar factibilidad {fin-inicio}")
     return soluciones
     
 
@@ -184,6 +178,21 @@ def _procesarFactibilidadGPU(soluciones, restricciones):
     #llamar kernel
     kernelFactibilidadGPU[blockspergrid, threadsperblock](sol_global_mem,rest_global_mem,resultado_global_mem)
 
+    return resultado_global_mem.copy_to_host()
+
+def _procesarFactibilidadGPU2(soluciones, restricciones, numRestricciones):
+    restriccionesCumplidas = np.zeros((soluciones.shape[0], numRestricciones), dtype=np.uint16)
+    #iniciar kernel
+    threadsperblock = (NSOL, MRES)
+    blockspergrid_x = int(math.ceil(soluciones.shape[0] / threadsperblock[0]))
+    blockspergrid_y = int(math.ceil(restricciones.shape[0] / threadsperblock[1]))
+    blockspergrid = (blockspergrid_x, blockspergrid_y)
+    sol_global_mem = cuda.to_device(soluciones)
+    rest_global_mem = cuda.to_device(restricciones)
+    resultado_global_mem = cuda.to_device(restriccionesCumplidas)
+
+    #llamar kernel
+    kernelFactibilidadGPU2[blockspergrid, threadsperblock](sol_global_mem,rest_global_mem,resultado_global_mem)
     return resultado_global_mem.copy_to_host()
 
 def _ponderarColsReparar(restricciones, factibilidad, pesos, pondRestricciones):
@@ -274,6 +283,19 @@ def kernelFactibilidadGPU(soluciones, restricciones, resultado):
     #     if tmp > 0: break
 
     # resultado[solIdx, restIdx] = tmp
+
+
+@cuda.jit
+def kernelFactibilidadGPU2(soluciones, restricciones, resultado):
+    
+    #leer soluciones y restricciones a procesar
+    solIdx, restIdx = cuda.grid(2)
+    
+    if solIdx >= soluciones.shape[0]: return
+    if restIdx >= restricciones.shape[0]: return
+
+    if resultado[solIdx, restricciones[restIdx,0]] == 0 and soluciones[solIdx,restricciones[restIdx,1]] == 1:
+        resultado[solIdx, restricciones[restIdx,0]] = 1
 
 
 @cuda.jit
