@@ -4,6 +4,7 @@ import numba
 import math
 import sys
 from numba.cuda.random import create_xoroshiro128p_states, xoroshiro128p_uniform_float32
+import datetime 
 
 #cumple reparaSoluciones
 #recibe (todos numpy array)
@@ -24,7 +25,10 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
     restricciones = np.array(restricciones, dtype=np.int8)
     n,m = soluciones.shape
     assert m == restricciones.shape[1], f"numero de columnas distinto en soluciones {m} y restricciones {restricciones.shape[1]}"
+    inicio = datetime.datetime.now()
     factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
+    fin = datetime.datetime.now()
+    print(f"tiempo procesar factibilidad {fin-inicio}")
     columnas = np.arange(soluciones.shape[0])
     cont = 0
     while (factibilidad == 0).any():        
@@ -158,7 +162,10 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         # print(f"fin iteracion")
         soluciones[idxDeterministas,mejorColumna[idxDeterministas]] = 1
         soluciones[np.argwhere(idxNoDeterministas),colsElegidasRandom.reshape((-1,1))] = 1
+        inicio = datetime.datetime.now()
         factibilidad = _procesarFactibilidadGPU(soluciones, restricciones)
+        fin = datetime.datetime.now()
+        print(f"tiempo procesar factibilidad {fin-inicio}")
     return soluciones
     
 
@@ -235,23 +242,38 @@ def kernelFactibilidadGPU(soluciones, restricciones, resultado):
     
     if solIdx >= soluciones.shape[0]: return
     if restIdx >= restricciones.shape[0]: return
-    
-    tmp = 0
-    numGCols = int(math.ceil(soluciones.shape[1]/COL))
-    for gcol in range(numGCols):
-        colInicio = gcol*COL
 
-        for c in range(COL):
-            col = colInicio+c
-            if col >= soluciones.shape[1]: break
-            tmp += soluciones[solIdx,col] * restricciones[restIdx, col]
-            if tmp > 0: break
+    numGCols = int(math.ceil(soluciones.shape[1]/COL))
+    tmp = 0
+    for gcol in range(numGCols):
+        for col in range(COL):
+            if col + (gcol*numGCols) > soluciones.shape[1]: break
+            if ty == 0: solTmp[tx,col] = soluciones[solIdx, col+(gcol*numGCols)]
+            if tx == 0: restTmp[ty,col] = restricciones[restIdx, col+(gcol*numGCols)]
+        cuda.syncthreads()
+        if tmp <= 0:
+            for col in range(COL):
+                tmp = solTmp[tx,col] * restTmp[ty,col]
+                if tmp > 0: 
+                    break
+    resultado[solIdx, restIdx] = tmp
+
+    # tmp = 0
+    # numGCols = int(math.ceil(soluciones.shape[1]/COL))
+    # for gcol in range(numGCols):
+    #     colInicio = gcol*COL
+
+    #     for c in range(COL):
+    #         col = colInicio+c
+    #         if col >= soluciones.shape[1]: break
+    #         tmp += soluciones[solIdx,col] * restricciones[restIdx, col]
+    #         if tmp > 0: break
         
 
-        cuda.syncthreads()
-        if tmp > 0: break
+    #     cuda.syncthreads()
+    #     if tmp > 0: break
 
-    resultado[solIdx, restIdx] = tmp
+    # resultado[solIdx, restIdx] = tmp
 
 
 @cuda.jit
