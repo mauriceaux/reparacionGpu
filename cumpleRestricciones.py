@@ -74,6 +74,7 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         # exit()
 
         ponderaciones = _ponderarColsReparar(restricciones, factibilidadTmp, pesos, pondRestricciones)
+        ponderaciones[soluciones==1] = 0
         ponderaciones[ponderaciones==0] = np.inf
         
         idxSolsInfactibles = np.any(factibilidadTmp==0, axis=1)
