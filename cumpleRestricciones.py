@@ -35,7 +35,15 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
     
         # ELEGIR RESTRICCIONES
 
-
+        # #comprobacion
+        # for solIdx in range(factibilidad.shape[0]):
+        #     for restrIdx in range(factibilidad.shape[0]):
+        #         if factibilidad[solIdx, restrIdx] == 1: continue
+        #         for restrCol in range(restricciones[restrIdx].shape[0]):
+        #             if restricciones[restrIdx,restrCol] == 0: continue
+        #             if soluciones[solIdx, restrCol] == 1:
+        #                 print(f"solucion {solIdx} columna {restrCol} tiene valor {soluciones[solIdx, restrCol]}")
+        # exit()
 
         infactibles = factibilidad.copy()
         infactibles = infactibles.astype(float)
@@ -61,6 +69,16 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
             # print(idx)
             factibilidadTmp[idx[0], infactiblesSel[idx[0],idx[1]]] = 0
         factibilidadTmp[factibilidad==1] = 1
+
+        #comprobacion
+        # for solIdx in range(factibilidadTmp.shape[0]):
+        #     for restrIdx in range(factibilidadTmp.shape[0]):
+        #         if factibilidadTmp[solIdx, restrIdx] == 1: continue
+        #         for restrCol in range(restricciones[restrIdx].shape[0]):
+        #             if restricciones[restrIdx,restrCol] == 0: continue
+        #             if soluciones[solIdx, restrCol] == 1:
+        #                 print(f"solucion {solIdx} columna {restrCol} tiene valor {soluciones[solIdx, restrCol]}")
+        # exit()
         # print(factibilidadTmp)
         # print(f"infactibles seleccionadas {infactiblesSel[iPondInfactibles[:,0].reshape(-1,1), iPondInfactibles[:,1].reshape(-1,1)]}")
 
@@ -74,6 +92,13 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         # exit()
 
         ponderaciones = _ponderarColsReparar(restricciones, factibilidadTmp, pesos, pondRestricciones)
+        # # comprobacion
+        # for solIdx in range(soluciones.shape[0]):
+        #     for colIdx in range(soluciones.shape[1]):
+        #         if ponderaciones[solIdx, colIdx] > 0:
+        #             print(f"ponderacion solucion {solIdx} columna {colIdx} tiene valor en solucion {soluciones[solIdx,colIdx]} ponderacion {ponderaciones[solIdx,colIdx]}")
+
+
         ponderaciones[soluciones==1] = 0
         ponderaciones[ponderaciones==0] = np.inf
         
@@ -186,7 +211,7 @@ def _procesarFactibilidadGPU2(soluciones, restricciones, numRestricciones):
     #iniciar kernel
     threadsperblock = (NSOL, MRES)
     blockspergrid_x = int(math.ceil(soluciones.shape[0] / threadsperblock[0]))
-    blockspergrid_y = int(math.ceil(restricciones.shape[0] / threadsperblock[1]))
+    blockspergrid_y = int(math.ceil(numRestricciones / threadsperblock[1]))
     blockspergrid = (blockspergrid_x, blockspergrid_y)
     sol_global_mem = cuda.to_device(soluciones)
     rest_global_mem = cuda.to_device(restricciones)
@@ -252,38 +277,23 @@ def kernelFactibilidadGPU(soluciones, restricciones, resultado):
     
     if solIdx >= soluciones.shape[0]: return
     if restIdx >= restricciones.shape[0]: return
-
-    numGCols = int(math.ceil(soluciones.shape[1]/COL))
+    
     tmp = 0
+    numGCols = int(math.ceil(soluciones.shape[1]/COL))
     for gcol in range(numGCols):
-        for col in range(COL):
-            if col + (gcol*numGCols) > soluciones.shape[1]: break
-            if ty == 0: solTmp[tx,col] = soluciones[solIdx, col+(gcol*numGCols)]
-            if tx == 0: restTmp[ty,col] = restricciones[restIdx, col+(gcol*numGCols)]
-        cuda.syncthreads()
-        if tmp <= 0:
-            for col in range(COL):
-                tmp = solTmp[tx,col] * restTmp[ty,col]
-                if tmp > 0: 
-                    break
-    resultado[solIdx, restIdx] = tmp
+        colInicio = gcol*COL
 
-    # tmp = 0
-    # numGCols = int(math.ceil(soluciones.shape[1]/COL))
-    # for gcol in range(numGCols):
-    #     colInicio = gcol*COL
-
-    #     for c in range(COL):
-    #         col = colInicio+c
-    #         if col >= soluciones.shape[1]: break
-    #         tmp += soluciones[solIdx,col] * restricciones[restIdx, col]
-    #         if tmp > 0: break
+        for c in range(COL):
+            col = colInicio+c
+            if col >= soluciones.shape[1]: break
+            tmp += soluciones[solIdx,col] * restricciones[restIdx, col]
+            if tmp > 0: break
         
 
-    #     cuda.syncthreads()
-    #     if tmp > 0: break
+        cuda.syncthreads()
+        if tmp > 0: break
 
-    # resultado[solIdx, restIdx] = tmp
+    resultado[solIdx, restIdx] = tmp
 
 
 @cuda.jit
