@@ -44,31 +44,67 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #             if soluciones[solIdx, restrCol] == 1:
         #                 print(f"solucion {solIdx} columna {restrCol} tiene valor {soluciones[solIdx, restrCol]}")
         # exit()
-
+        # print(f"factibilidad {factibilidad}")
         infactibles = factibilidad.copy()
         infactibles = infactibles.astype(float)
-        infactibles[infactibles > 0] = -np.inf
-        infactibles[infactibles == 0] = 1
+        infactibles[factibilidad == 1] = -np.inf
+        infactibles[factibilidad == 0] = 1
+        # print(f"infactibles {infactibles}")
         infactiblesPonderadas = infactibles*pondRestricciones
-        infactiblesPonderadas[factibilidad==1] = -np.inf
+        # print(f"infactiblesPonderadas {infactiblesPonderadas}")
+        # print(f"infactiblesPonderadas[infactiblesPonderadas==-np.inf] == factibilidad[factibilidad==1] {(infactiblesPonderadas[infactiblesPonderadas==-np.inf] == factibilidad[factibilidad==1]).all()}")
+        # exit()
+
+        # infactiblesPonderadas[factibilidad==1] = -np.inf
         # print(f"infactibles * pondRestricciones {infactiblesPonderadas}")
         # print(f"infactiblesPonderadas {infactiblesPonderadas}")
-        nCols = 10
+        nCols = 20
         # infactiblesSel = np.argpartition(infactiblesPonderadas,nCols,axis=1)[:,:nCols]
         #infactiblesSel = np.argsort(infactiblesPonderadas, axis=1)[::-1][:,:nCols]
-        infactiblesSel = np.argsort(-infactiblesPonderadas, axis=1)[:,:nCols]
-        # print(f"infactibles seleccionadas {infactiblesSel}")
+        idxs = np.tile(np.arange(infactiblesPonderadas.shape[1]), (infactiblesPonderadas.shape[0], 1))
+        # print(idxs)
         # exit()
+        infactiblesSel = np.lexsort((idxs,-infactiblesPonderadas), axis=1)[:,:nCols]
+        # infactiblesSel = np.argsort(-infactiblesPonderadas, axis=1)[:,:nCols]
+        # print(f"infactiblesSel {infactiblesSel}")
+        # exit()
+        # pondSel = infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]), infactiblesSel]
+        # # print(f"pondSel{pondSel}")
+        # pondSelNoInf = pondSel<np.inf
+        # # print(f"pondSelNoInf {pondSelNoInf}")
+        # idxInfSelNoInf = np.nonzero(pondSelNoInf)
+        # # print(f"idxInfSelNoInf {idxInfSelNoInf}")
+        # infSelNoInf = infactiblesSel[idxInfSelNoInf]
+        # # print(f"infSelNoInf {infSelNoInf}")
+        factibilidadTmp = np.ones(factibilidad.shape)
+        factibilidadTmp[np.arange(factibilidad.shape[0]).reshape((-1,1)), infactiblesSel] = 0
+        factibilidadTmp[factibilidad==1] = 1
+        # print(f"np.argwhere(factibilidad==0) {np.argwhere(factibilidad==0)}")
+        # print(f"np.argwhere(factibilidadTmp==0) {np.argwhere(factibilidadTmp==0)}")
+        # exit()
+        # factibilidadTmp[idxInfSelNoInf[0],infSelNoInf] = 0
+
+        # if (factibilidadTmp<factibilidad).any():
+        #     print(f"factibilidad[idxInfSelNoInf[0],infSelNoInf] > 0 {np.argwhere(factibilidad[idxInfSelNoInf[0],infSelNoInf]>0)}")
+        #     print(f"factibilidadTmp>factibilidad {np.argwhere(factibilidadTmp<factibilidad)}")
+        #     exit()
+        # print(f"factibilidadTmp {np.argwhere(factibilidadTmp==0)}")
+        # exit()
+        # for idx in range(infactiblesSel.shape[0]):
+        #     factibilidadTmp[idx][infactiblesSel[infactiblesPonderadas[infactiblesSel]>-np.inf]]
+        #     # print(idx)
+        #     factibilidadTmp[idx[0], infactiblesSel[idx[0],idx[1]]] = 0
+        # factibilidadTmp[factibilidad==1] = 1
         # print(infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]).reshape(-1,1),infactiblesSel])
-        iPondInfactibles = infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]).reshape(-1,1),infactiblesSel] > 0
+        # iPondInfactibles = infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]).reshape(-1,1),infactiblesSel] > 0
         # iPondInfactibles = np.argwhere(infactiblesPonderadas[np.arange(infactiblesPonderadas.shape[0]).reshape(-1,1),infactiblesSel] < np.inf)
         # print(f"infactibles efectivamente infactibles {iPondInfactibles}")
         # exit()
-        factibilidadTmp = np.ones(factibilidad.shape)
-        for idx in np.argwhere(iPondInfactibles):
-            # print(idx)
-            factibilidadTmp[idx[0], infactiblesSel[idx[0],idx[1]]] = 0
-        factibilidadTmp[factibilidad==1] = 1
+        # factibilidadTmp = np.ones(factibilidad.shape)
+        # for idx in np.argwhere(iPondInfactibles):
+        #     # print(idx)
+        #     factibilidadTmp[idx[0], infactiblesSel[idx[0],idx[1]]] = 0
+        # factibilidadTmp[factibilidad==1] = 1
 
         #comprobacion
         # for solIdx in range(factibilidadTmp.shape[0]):
@@ -99,16 +135,18 @@ def reparaSoluciones(soluciones, restricciones, pesos, pondRestricciones):
         #             print(f"ponderacion solucion {solIdx} columna {colIdx} tiene valor en solucion {soluciones[solIdx,colIdx]} ponderacion {ponderaciones[solIdx,colIdx]}")
 
 
-        ponderaciones[soluciones==1] = 0
+        # ponderaciones[soluciones==1] = 0
         ponderaciones[ponderaciones==0] = np.inf
         
         idxSolsInfactibles = np.any(factibilidadTmp==0, axis=1)
         # print(f"idxSolsInfactibles {idxSolsInfactibles}")
-        nCols = 10
+        nCols = 20
         # colsElegidas = np.argpartition(ponderaciones,nCols,axis=1)[:,:nCols]
         # print(f"colsElegidas 1 {colsElegidas}")
         # print(f"ponderaciones {ponderaciones}")
-        colsElegidas = np.argsort(ponderaciones,axis=1)[:,:nCols]
+        idxs = np.tile(np.arange(ponderaciones.shape[1]), (ponderaciones.shape[0], 1))
+        colsElegidas = np.lexsort((idxs,ponderaciones), axis=1)[:,:nCols]
+        # colsElegidas = np.argsort(ponderaciones,axis=1)[:,:nCols]
         # print(f"colsElegidas 2 {colsElegidas}")
         # exit()
         # INDICES SOLUCIONES A REPARAR DETERMINISTA Y RANDOM
